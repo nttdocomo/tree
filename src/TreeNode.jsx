@@ -1,7 +1,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
-import Animate from 'rc-animate';
+import CSSMotion from 'rc-animate/lib/CSSMotion';
 import toArray from 'rc-util/lib/Children/toArray';
 import { polyfill } from 'react-lifecycles-compat';
 import { nodeContextTypes } from './contextTypes';
@@ -42,6 +42,7 @@ class TreeNode extends React.Component {
 
     // By user
     isLeaf: PropTypes.bool,
+    checkable: PropTypes.bool,
     selectable: PropTypes.bool,
     disabled: PropTypes.bool,
     disableCheckbox: PropTypes.bool,
@@ -124,10 +125,10 @@ class TreeNode extends React.Component {
 
     const { disableCheckbox, checked } = this.props;
     const {
-      rcTree: { checkable, onNodeCheck },
+      rcTree: { onNodeCheck },
     } = this.context;
 
-    if (!checkable || disableCheckbox) return;
+    if (!this.isCheckable() || disableCheckbox) return;
 
     e.preventDefault();
     const targetChecked = !checked;
@@ -273,6 +274,15 @@ class TreeNode extends React.Component {
     return !!(treeDisabled || disabled);
   };
 
+  isCheckable = () => {
+    const { checkable } = this.props;
+    const { rcTree: { checkable: treeCheckable } } = this.context;
+
+    // Return false if tree or treeNode is not checkable
+    if (!treeCheckable || checkable === false) return false;
+    return treeCheckable;
+  };
+
   isSelectable() {
     const { selectable } = this.props;
     const { rcTree: { selectable: treeSelectable } } = this.context;
@@ -339,8 +349,9 @@ class TreeNode extends React.Component {
   // Checkbox
   renderCheckbox = () => {
     const { checked, halfChecked, disableCheckbox } = this.props;
-    const { rcTree: { prefixCls, checkable } } = this.context;
+    const { rcTree: { prefixCls } } = this.context;
     const disabled = this.isDisabled();
+    const checkable = this.isCheckable();
 
     if (!checkable) return null;
 
@@ -442,16 +453,9 @@ class TreeNode extends React.Component {
     const { expanded, pos } = this.props;
     const { rcTree: {
       prefixCls,
-      openTransitionName, openAnimation,
+      motion,
       renderTreeNode,
     } } = this.context;
-
-    const animProps = {};
-    if (openTransitionName) {
-      animProps.transitionName = openTransitionName;
-    } else if (typeof openAnimation === 'object') {
-      animProps.animation = { ...openAnimation };
-    }
 
     // Children TreeNode
     const nodeList = this.getNodeChildren();
@@ -459,33 +463,27 @@ class TreeNode extends React.Component {
     if (nodeList.length === 0) {
       return null;
     }
-
-    let $children;
-    if (expanded) {
-      $children = (
-        <ul
-          className={classNames(
-            `${prefixCls}-child-tree`,
-            expanded && `${prefixCls}-child-tree-open`,
-          )}
-          data-expanded={expanded}
-          role="group"
-        >
-          {mapChildren(nodeList, (node, index) => (
-            renderTreeNode(node, index, pos)
-          ))}
-        </ul>
-      );
-    }
-
     return (
-      <Animate
-        {...animProps}
-        showProp="data-expanded"
-        component=""
-      >
-        {$children}
-      </Animate>
+      <CSSMotion visible={expanded} {...motion}>
+        {({ style, className }) => {
+          return (
+            <ul
+              className={classNames(
+                className,
+                `${prefixCls}-child-tree`,
+                expanded && `${prefixCls}-child-tree-open`,
+              )}
+              style={style}
+              data-expanded={expanded}
+              role="group"
+            >
+              {mapChildren(nodeList, (node, index) => (
+                renderTreeNode(node, index, pos)
+              ))}
+            </ul>
+          );
+        }}
+      </CSSMotion>
     );
   };
 

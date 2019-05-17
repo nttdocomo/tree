@@ -2,7 +2,6 @@
 import React from 'react';
 import { render, mount } from 'enzyme';
 import { renderToJson } from 'enzyme-to-json';
-import Animate from 'rc-animate';
 import PropTypes from 'prop-types';
 import Tree, { TreeNode } from '..';
 import { nodeMatcher } from './util';
@@ -316,6 +315,22 @@ describe('Tree Props', () => {
         nativeEvent: expect.objectContaining({}),
       }));
       expect(handleOnSelect).not.toBeCalled();
+    });
+
+    it('node set checkable to `false`', () => {
+      const wrapper = mount(
+        <Tree
+          checkable
+          defaultExpandAll
+        >
+          <TreeNode key="0-0">
+            <TreeNode key="0-0-0" checkable={false} />
+          </TreeNode>
+        </Tree>
+      );
+
+      expect(wrapper.find('TreeNode').at(0).find('.rc-tree-checkbox').length).toBeTruthy();
+      expect(wrapper.find('TreeNode').at(1).find('.rc-tree-checkbox').length).toBeFalsy();
     });
   });
 
@@ -748,34 +763,21 @@ describe('Tree Props', () => {
     });
   });
 
-  it('openTransitionName', () => {
-    const wrapper = mount(
-      <Tree openTransitionName="test-trans">
-        <TreeNode key="0-0">
-          <TreeNode key="0-0-0" />
-        </TreeNode>
-      </Tree>
-    );
-
-    const { transitionName } = wrapper.find(Animate).props();
-    expect(transitionName).toBe('test-trans');
-  });
-
-  it('openAnimation', () => {
-    const openAnimation = {
-      enter: 'test-enter',
-      leave: 'test-leave',
+  it('motion', () => {
+    const motion = {
+      motionName: 'bamboo',
     };
     const wrapper = mount(
-      <Tree openAnimation={openAnimation}>
+      <Tree motion={motion}>
         <TreeNode key="0-0">
           <TreeNode key="0-0-0" />
         </TreeNode>
       </Tree>
     );
 
-    const { animation } = wrapper.find(Animate).props();
-    expect(animation).toEqual(openAnimation);
+    expect(
+      wrapper.find('CSSMotion').props()
+    ).toMatchObject(motion);
   });
 
   describe('data and aria props', () => {
@@ -833,5 +835,11 @@ describe('Tree Props', () => {
       );
       expect(wrapper).toMatchSnapshot();
     });
+  });
+
+  it('should style work', () => {
+    const style = { background: 'red' };
+    const wrapper = mount(<Tree style={style} />);
+    expect(wrapper.props().style).toEqual(style);
   });
 });
